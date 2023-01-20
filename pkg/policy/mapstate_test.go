@@ -24,68 +24,68 @@ func Test_IsSuperSetOf(t *testing.T) {
 		subSet   Key
 		res      int
 	}{
-		{Key{}, Key{}, 0},
-		{Key{0, 0, 0, 0}, Key{42, 0, 6, 0}, 1},
-		{Key{0, 0, 0, 0}, Key{42, 80, 6, 0}, 1},
-		{Key{0, 0, 0, 0}, Key{42, 0, 0, 0}, 1},
-		{Key{0, 0, 6, 0}, Key{42, 0, 6, 0}, 2},
-		{Key{0, 0, 6, 0}, Key{42, 80, 6, 0}, 2},
-		{Key{0, 80, 6, 0}, Key{42, 80, 6, 0}, 3},
-		{Key{0, 80, 6, 0}, Key{42, 80, 17, 0}, 0},  // proto is different
-		{Key{2, 80, 6, 0}, Key{42, 80, 6, 0}, 0},   // id is different
-		{Key{0, 8080, 6, 0}, Key{42, 80, 6, 0}, 0}, // port is different
-		{Key{42, 0, 0, 0}, Key{42, 0, 0, 0}, 0},    // same key
-		{Key{42, 0, 0, 0}, Key{42, 0, 6, 0}, 4},
-		{Key{42, 0, 0, 0}, Key{42, 80, 6, 0}, 4},
-		{Key{42, 0, 0, 0}, Key{42, 0, 17, 0}, 4},
-		{Key{42, 0, 0, 0}, Key{42, 80, 17, 0}, 4},
-		{Key{42, 0, 6, 0}, Key{42, 0, 6, 0}, 0}, // same key
-		{Key{42, 0, 6, 0}, Key{42, 80, 6, 0}, 5},
-		{Key{42, 0, 6, 0}, Key{42, 8080, 6, 0}, 5},
-		{Key{42, 80, 6, 0}, Key{42, 80, 6, 0}, 0},    // same key
-		{Key{42, 80, 6, 0}, Key{42, 8080, 6, 0}, 0},  // different port
-		{Key{42, 80, 6, 0}, Key{42, 80, 17, 0}, 0},   // different proto
-		{Key{42, 80, 6, 0}, Key{42, 8080, 17, 0}, 0}, // different port and proto
+		{Key{PortMask: 0xffff}, Key{PortMask: 0xffff}, 0},
+		{Key{0, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 6, 0}, 1},
+		{Key{0, 0, 0xffff, 0, 0}, Key{42, 80, 0xffff, 6, 0}, 1},
+		{Key{0, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 0, 0}, 1},
+		{Key{0, 0, 0xffff, 6, 0}, Key{42, 0, 0xffff, 6, 0}, 2},
+		{Key{0, 0, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 2},
+		{Key{0, 80, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 3},
+		{Key{0, 80, 0xffff, 6, 0}, Key{42, 80, 0xffff, 17, 0}, 0},  // proto is different
+		{Key{2, 80, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 0},   // id is different
+		{Key{0, 8080, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 0}, // port is different
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 0, 0}, 0},    // same key
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 6, 0}, 4},
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 80, 0xffff, 6, 0}, 4},
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 17, 0}, 4},
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 80, 0xffff, 17, 0}, 4},
+		{Key{42, 0, 0xffff, 6, 0}, Key{42, 0, 0xffff, 6, 0}, 0}, // same key
+		{Key{42, 0, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 5},
+		{Key{42, 0, 0xffff, 6, 0}, Key{42, 8080, 0xffff, 6, 0}, 5},
+		{Key{42, 80, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 0},    // same key
+		{Key{42, 80, 0xffff, 6, 0}, Key{42, 8080, 0xffff, 6, 0}, 0},  // different port
+		{Key{42, 80, 0xffff, 6, 0}, Key{42, 80, 0xffff, 17, 0}, 0},   // different proto
+		{Key{42, 80, 0xffff, 6, 0}, Key{42, 8080, 0xffff, 17, 0}, 0}, // different port and proto
 
 		// increasing specificity for a L3/L4 key
-		{Key{0, 0, 0, 0}, Key{42, 80, 6, 0}, 1},
-		{Key{0, 0, 6, 0}, Key{42, 80, 6, 0}, 2},
-		{Key{0, 80, 6, 0}, Key{42, 80, 6, 0}, 3},
-		{Key{42, 0, 0, 0}, Key{42, 80, 6, 0}, 4},
-		{Key{42, 0, 6, 0}, Key{42, 80, 6, 0}, 5},
-		{Key{42, 80, 6, 0}, Key{42, 80, 6, 0}, 0}, // same key
+		{Key{0, 0, 0xffff, 0, 0}, Key{42, 80, 0xffff, 6, 0}, 1},
+		{Key{0, 0, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 2},
+		{Key{0, 80, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 3},
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 80, 0xffff, 6, 0}, 4},
+		{Key{42, 0, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 5},
+		{Key{42, 80, 0xffff, 6, 0}, Key{42, 80, 0xffff, 6, 0}, 0}, // same key
 
 		// increasing specificity for a L3-only key
-		{Key{0, 0, 0, 0}, Key{42, 0, 0, 0}, 1},
-		{Key{0, 0, 6, 0}, Key{42, 0, 0, 0}, 0},   // not a superset
-		{Key{0, 80, 6, 0}, Key{42, 0, 0, 0}, 0},  // not a superset
-		{Key{42, 0, 0, 0}, Key{42, 0, 0, 0}, 0},  // same key
-		{Key{42, 0, 6, 0}, Key{42, 0, 0, 0}, 0},  // not a superset
-		{Key{42, 80, 6, 0}, Key{42, 0, 0, 0}, 0}, // not a superset
+		{Key{0, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 0, 0}, 1},
+		{Key{0, 0, 0xffff, 6, 0}, Key{42, 0, 0xffff, 0, 0}, 0},   // not a superset
+		{Key{0, 80, 0xffff, 6, 0}, Key{42, 0, 0xffff, 0, 0}, 0},  // not a superset
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 0, 0}, 0},  // same key
+		{Key{42, 0, 0xffff, 6, 0}, Key{42, 0, 0xffff, 0, 0}, 0},  // not a superset
+		{Key{42, 80, 0xffff, 6, 0}, Key{42, 0, 0xffff, 0, 0}, 0}, // not a superset
 
 		// increasing specificity for a L3/proto key
-		{Key{0, 0, 0, 0}, Key{42, 0, 6, 0}, 1},
-		{Key{0, 0, 6, 0}, Key{42, 0, 6, 0}, 2},
-		{Key{0, 80, 6, 0}, Key{42, 0, 6, 0}, 0}, // not a superset
-		{Key{42, 0, 0, 0}, Key{42, 0, 6, 0}, 4},
-		{Key{42, 0, 6, 0}, Key{42, 0, 6, 0}, 0},  // same key
-		{Key{42, 80, 6, 0}, Key{42, 0, 6, 0}, 0}, // not a superset
+		{Key{0, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 6, 0}, 1},
+		{Key{0, 0, 0xffff, 6, 0}, Key{42, 0, 0xffff, 6, 0}, 2},
+		{Key{0, 80, 0xffff, 6, 0}, Key{42, 0, 0xffff, 6, 0}, 0}, // not a superset
+		{Key{42, 0, 0xffff, 0, 0}, Key{42, 0, 0xffff, 6, 0}, 4},
+		{Key{42, 0, 0xffff, 6, 0}, Key{42, 0, 0xffff, 6, 0}, 0},  // same key
+		{Key{42, 80, 0xffff, 6, 0}, Key{42, 0, 0xffff, 6, 0}, 0}, // not a superset
 
 		// increasing specificity for a proto-only key
-		{Key{0, 0, 0, 0}, Key{0, 0, 6, 0}, 1},
-		{Key{0, 0, 6, 0}, Key{0, 0, 6, 0}, 0},   // same key
-		{Key{0, 80, 6, 0}, Key{0, 0, 6, 0}, 0},  // not a superset
-		{Key{42, 0, 0, 0}, Key{0, 0, 6, 0}, 0},  // not a superset
-		{Key{42, 0, 6, 0}, Key{0, 0, 6, 0}, 0},  // not a superset
-		{Key{42, 80, 6, 0}, Key{0, 0, 6, 0}, 0}, // not a superset
+		{Key{0, 0, 0xffff, 0, 0}, Key{0, 0, 0xffff, 6, 0}, 1},
+		{Key{0, 0, 0xffff, 6, 0}, Key{0, 0, 0xffff, 6, 0}, 0},   // same key
+		{Key{0, 80, 0xffff, 6, 0}, Key{0, 0, 0xffff, 6, 0}, 0},  // not a superset
+		{Key{42, 0, 0xffff, 0, 0}, Key{0, 0, 0xffff, 6, 0}, 0},  // not a superset
+		{Key{42, 0, 0xffff, 6, 0}, Key{0, 0, 0xffff, 6, 0}, 0},  // not a superset
+		{Key{42, 80, 0xffff, 6, 0}, Key{0, 0, 0xffff, 6, 0}, 0}, // not a superset
 
 		// increasing specificity for a L4-only key
-		{Key{0, 0, 0, 0}, Key{0, 80, 6, 0}, 1},
-		{Key{0, 0, 6, 0}, Key{0, 80, 6, 0}, 2},
-		{Key{0, 80, 6, 0}, Key{0, 80, 6, 0}, 0},  // same key
-		{Key{42, 0, 0, 0}, Key{0, 80, 6, 0}, 0},  // not a superset
-		{Key{42, 0, 6, 0}, Key{0, 80, 6, 0}, 0},  // not a superset
-		{Key{42, 80, 6, 0}, Key{0, 80, 6, 0}, 0}, // not a superset
+		{Key{0, 0, 0xffff, 0, 0}, Key{0, 80, 0xffff, 6, 0}, 1},
+		{Key{0, 0, 0xffff, 6, 0}, Key{0, 80, 0xffff, 6, 0}, 2},
+		{Key{0, 80, 0xffff, 6, 0}, Key{0, 80, 0xffff, 6, 0}, 0},  // same key
+		{Key{42, 0, 0xffff, 0, 0}, Key{0, 80, 0xffff, 6, 0}, 0},  // not a superset
+		{Key{42, 0, 0xffff, 6, 0}, Key{0, 80, 0xffff, 6, 0}, 0},  // not a superset
+		{Key{42, 80, 0xffff, 6, 0}, Key{0, 80, 0xffff, 6, 0}, 0}, // not a superset
 
 	}
 	for i, tt := range tests {
@@ -1073,6 +1073,7 @@ func testKey(id int, port uint16, proto uint8, direction trafficdirection.Traffi
 		Identity:         uint32(id),
 		DestPort:         port,
 		Nexthdr:          proto,
+		PortMask:         0xffff,
 		TrafficDirection: direction.Uint8(),
 	}
 }

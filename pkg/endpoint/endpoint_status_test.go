@@ -91,6 +91,7 @@ func (s *EndpointSuite) newEndpoint(c *check.C, spec endpointGeneratorSpec) *End
 			key := policy.Key{
 				Identity:         uint32(i),
 				DestPort:         uint16(80 + n),
+				PortMask:         0xffff,
 				TrafficDirection: trafficdirection.Ingress.Uint8(),
 			}
 			e.desiredPolicy.GetPolicyMap().Insert(key, policy.MapStateEntry{})
@@ -102,6 +103,7 @@ func (s *EndpointSuite) newEndpoint(c *check.C, spec endpointGeneratorSpec) *End
 			key := policy.Key{
 				Identity:         uint32(i + 30000),
 				DestPort:         uint16(80 + n),
+				PortMask:         0xffff,
 				TrafficDirection: trafficdirection.Egress.Uint8(),
 			}
 			e.desiredPolicy.GetPolicyMap().Insert(key, policy.MapStateEntry{})
@@ -402,6 +404,7 @@ func (s *EndpointSuite) TestgetEndpointPolicyMapState(c *check.C) {
 			t := policy.Key{
 				Identity:         arg.identity,
 				DestPort:         arg.destPort,
+				PortMask:         0xffff,
 				Nexthdr:          arg.nexthdr,
 				TrafficDirection: arg.direction.Uint8(),
 			}

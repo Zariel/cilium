@@ -751,6 +751,7 @@ func (e *Endpoint) Allows(id identity.NumericIdentity) bool {
 
 	keyToLookup := policy.Key{
 		Identity:         uint32(id),
+		PortMask:         0xffff,
 		TrafficDirection: trafficdirection.Ingress.Uint8(),
 	}
 

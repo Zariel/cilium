@@ -386,6 +386,7 @@ func TestDecodePolicyVerdictNotify(t *testing.T) {
 	policyKey := policy.Key{
 		Identity:         uint32(remoteID),
 		DestPort:         uint16(dstPort),
+		PortMask:         0xffff,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Egress.Uint8(),
 	}
@@ -557,6 +558,7 @@ func TestDecodeTrafficDirection(t *testing.T) {
 	policyKey := policy.Key{
 		Identity:         remoteID,
 		DestPort:         0,
+		PortMask:         0xffff,
 		Nexthdr:          0,
 		TrafficDirection: trafficdirection.Egress.Uint8(),
 	}
@@ -696,6 +698,7 @@ func TestDecodeTrafficDirection(t *testing.T) {
 	assert.Equal(t, true, ok)
 	lbls, rev, ok := ep.GetRealizedPolicyRuleLabelsForKey(policy.Key{
 		Identity:         f.GetDestination().GetIdentity(),
+		PortMask:         0xffff,
 		TrafficDirection: directionFromProto(f.GetTrafficDirection()).Uint8(),
 	})
 	assert.Equal(t, true, ok)

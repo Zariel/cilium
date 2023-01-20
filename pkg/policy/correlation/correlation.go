@@ -51,6 +51,7 @@ func CorrelatePolicy(endpointGetter getters.EndpointGetter, f *flowpb.Flow) {
 	derivedFrom, rev, ok := lookupPolicyForKey(epInfo, policy.Key{
 		Identity:         uint32(remoteIdentity),
 		DestPort:         dport,
+		PortMask:         0xffff,
 		Nexthdr:          uint8(proto),
 		TrafficDirection: uint8(direction),
 	})
@@ -119,6 +120,7 @@ func lookupPolicyForKey(ep v1.EndpointInfo, key policy.Key) (derivedFrom labels.
 		derivedFrom, rev, ok = ep.GetRealizedPolicyRuleLabelsForKey(policy.Key{
 			Identity:         key.Identity,
 			DestPort:         0,
+			PortMask:         0xffff,
 			Nexthdr:          0,
 			TrafficDirection: key.TrafficDirection,
 		})
@@ -129,6 +131,7 @@ func lookupPolicyForKey(ep v1.EndpointInfo, key policy.Key) (derivedFrom labels.
 		derivedFrom, rev, ok = ep.GetRealizedPolicyRuleLabelsForKey(policy.Key{
 			Identity:         0,
 			DestPort:         0,
+			PortMask:         0xffff,
 			Nexthdr:          0,
 			TrafficDirection: key.TrafficDirection,
 		})

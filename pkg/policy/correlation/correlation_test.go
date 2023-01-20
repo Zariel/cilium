@@ -60,6 +60,7 @@ func TestCorrelatePolicy(t *testing.T) {
 	policyKey := policy.Key{
 		Identity:         uint32(remoteID),
 		DestPort:         uint16(dstPort),
+		PortMask:         0xffff,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Egress.Uint8(),
 	}
@@ -120,6 +121,7 @@ func TestCorrelatePolicy(t *testing.T) {
 	policyKey = policy.Key{
 		Identity:         uint32(localID),
 		DestPort:         uint16(dstPort),
+		PortMask:         0xffff,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Ingress.Uint8(),
 	}

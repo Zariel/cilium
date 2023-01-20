@@ -273,7 +273,7 @@ func (pm *PolicyMapTestSuite) TestPolicyMapWildcarding(c *C) {
 		}
 
 		// Get key
-		key := newKey(uint32(tt.args.id), uint16(tt.args.dport), u8proto.U8proto(tt.args.proto),
+		key := newKey(uint32(tt.args.id), uint16(tt.args.dport), 0xffff, u8proto.U8proto(tt.args.proto),
 			trafficdirection.TrafficDirection(tt.args.trafficDirection))
 
 		// Compure entry & validate key and entry

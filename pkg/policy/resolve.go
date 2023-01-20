@@ -265,6 +265,7 @@ func (p *EndpointPolicy) ConsumeMapChanges() (adds, deletes Keys) {
 func (p *EndpointPolicy) AllowsIdentity(identity identity.NumericIdentity) (ingress, egress bool) {
 	key := Key{
 		Identity: uint32(identity),
+		PortMask: 0xffff,
 	}
 
 	if !p.IngressPolicyEnabled {
