@@ -12,6 +12,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/google/renameio/v2"
@@ -35,8 +36,11 @@ import (
 	"github.com/cilium/cilium/pkg/maps/policymap"
 	"github.com/cilium/cilium/pkg/option"
 	"github.com/cilium/cilium/pkg/policy"
+	policyapi "github.com/cilium/cilium/pkg/policy/api"
+	"github.com/cilium/cilium/pkg/policy/trafficdirection"
 	"github.com/cilium/cilium/pkg/revert"
 	"github.com/cilium/cilium/pkg/time"
+	"github.com/cilium/cilium/pkg/u8proto"
 	"github.com/cilium/cilium/pkg/version"
 )
 
@@ -50,10 +54,27 @@ const (
 )
 
 var (
+	ErrPolicyEntryMaxExceeded = errors.New("policy map max entries limit exceeded")
+
 	handleNoHostInterfaceOnce sync.Once
 
 	syncPolicymapControllerGroup = controller.NewGroup("sync-policymap")
+
+	allKeys []policy.Key
 )
+
+func init() {
+	for _, proto := range policyapi.SupportedProtocols() {
+		p := u8proto.ProtoIDs[strings.ToLower(string(proto))]
+		allKeys = append(allKeys, policy.Key{
+			Nexthdr:          uint8(p),
+			TrafficDirection: trafficdirection.Ingress.Uint8(),
+		}, policy.Key{
+			Nexthdr:          uint8(p),
+			TrafficDirection: trafficdirection.Egress.Uint8(),
+		})
+	}
+}
 
 // policyMapPath returns the path to the policy map of endpoint.
 func (e *Endpoint) policyMapPath() string {
@@ -1053,7 +1074,7 @@ type policyMapPressureUpdater interface {
 }
 
 func (e *Endpoint) updatePolicyMapPressureMetric() {
-	value := float64(e.realizedPolicy.GetPolicyMap().Len()) / float64(e.policyMap.MaxEntries())
+	value := float64(e.desiredPolicy.GetPolicyMap().Len()) / float64(e.policyMap.MaxEntries())
 	e.PolicyMapPressureUpdater.Update(PolicyMapPressureEvent{
 		Value:      value,
 		EndpointID: e.ID,
@@ -1137,7 +1158,7 @@ func (e *Endpoint) ApplyPolicyMapChanges(proxyWaitGroup *completion.WaitGroup) e
 
 	e.PolicyDebug(nil, "ApplyPolicyMapChanges")
 
-	err := e.applyPolicyMapChanges()
+	err := e.applyPolicyMapChangesLocked()
 	if err != nil {
 		return err
 	}
@@ -1148,12 +1169,13 @@ func (e *Endpoint) ApplyPolicyMapChanges(proxyWaitGroup *completion.WaitGroup) e
 	return err
 }
 
-// applyPolicyMapChanges applies any incremental policy map changes
-// collected on the desired policy.
-func (e *Endpoint) applyPolicyMapChanges() error {
+// applyPolicyMapChangesLocked applies any incremental policy map changes
+// collected on the desired policy. The method must be called with the
+// endpoint mutex held.
+func (e *Endpoint) applyPolicyMapChangesLocked() error {
 	errors := 0
 
-	e.PolicyDebug(nil, "applyPolicyMapChanges")
+	e.PolicyDebug(nil, "applyPolicyMapChangesLocked")
 
 	//  Note that after successful endpoint regeneration the
 	//  desired and realized policies are the same pointer. During
@@ -1181,6 +1203,25 @@ func (e *Endpoint) applyPolicyMapChanges() error {
 				e.desiredPolicy.GetPolicyMap().AddVisibilityKeys(e, redirectPort, visMeta, changes)
 			}
 		}
+	}
+
+	if e.desiredPolicy.GetPolicyMap().Len() > policymap.MaxEntries {
+		if e.lockDown {
+			return ErrPolicyEntryMaxExceeded
+		}
+		e.lockDown = true
+		e.getLogger().WithFields(logrus.Fields{
+			logfields.EndpointID: e.ID,
+		}).Warn("Policy Map exceeds the policy map max entries limit, locking endpoint down...")
+		err := e.endpointPolicyLockdown()
+		if err != nil {
+			e.getLogger().WithFields(logrus.Fields{
+				logfields.EndpointID: e.ID,
+			}).WithError(err).Error("Failed to lockdown endpoint. The endpoint may be compromised, consider quarantining or shutting down this node.")
+		}
+		return ErrPolicyEntryMaxExceeded
+	} else {
+		e.lockDown = false
 	}
 
 	// Add policy map entries before deleting to avoid transient drops
@@ -1228,13 +1269,44 @@ func (e *Endpoint) applyPolicyMapChanges() error {
 	return nil
 }
 
+// endpointPolicyLockdown puts the endpoint policy map into a lockdown
+// mode. A new bpf policy map is populated with deny all traffic entries,
+// the old map is unpinned, and the new map is pinned.
+func (e *Endpoint) endpointPolicyLockdown() error {
+	tmpPMPath := e.policyMapPath() + "_lockdown"
+	pM, err := policymap.CreateUnpinned(tmpPMPath)
+	if err != nil {
+		return fmt.Errorf("could not create bpf map %q: %w", tmpPMPath, err)
+	}
+	mapState := policy.NewMapState(nil)
+	for _, k := range allKeys {
+		policymapKey := policymap.NewKey(k.Identity, k.DestPort,
+			k.Nexthdr, k.TrafficDirection)
+		if err := pM.DenyKey(policymapKey); err != nil {
+			return fmt.Errorf("failed to add deny all policy: %w", err)
+		}
+		mapState.Insert(k, policy.MapStateEntry{IsDeny: true})
+	}
+	err = e.policyMap.Unpin()
+	if err != nil {
+		return fmt.Errorf("failed to unpin previous map: %w", err)
+	}
+	e.policyMap = pM
+	e.realizedPolicy.SetPolicyMap(mapState)
+	if err = e.policyMap.Pin(e.policyMapPath()); err != nil {
+		return fmt.Errorf("failed to pin new map to %q: %w", e.policyMapPath(), err)
+	}
+	e.updatePolicyMapPressureMetric()
+	return nil
+}
+
 // syncPolicyMap updates the bpf policy map state based on the
 // difference between the realized and desired policy state without
 // dumping the bpf policy map.
 func (e *Endpoint) syncPolicyMap() error {
 	// Apply pending policy map changes first so that desired map is up-to-date before
 	// we diff the maps below.
-	err := e.applyPolicyMapChanges()
+	err := e.applyPolicyMapChangesLocked()
 	if err != nil {
 		return err
 	}
@@ -1349,7 +1421,7 @@ func (e *Endpoint) syncPolicyMapWithDump() error {
 
 	// Apply pending policy map changes first so that desired map is up-to-date before
 	// we diff the maps below.
-	err := e.applyPolicyMapChanges()
+	err := e.applyPolicyMapChangesLocked()
 	if err != nil {
 		return err
 	}
