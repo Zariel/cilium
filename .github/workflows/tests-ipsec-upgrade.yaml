@@ -264,9 +264,8 @@ jobs:
         uses: cilium/cilium/.github/actions/conn-disrupt-test@550b56e1f8bfe601abd569368461cb8e8529aef1
         with:
           job-name: ipsec-upgrade-${{ matrix.name }}
-          # Disable no-missed-tail-calls due to https://github.com/cilium/cilium/issues/26739
           # Disable check-log-errors due to https://github.com/cilium/cilium-cli/issues/1858
-          extra-connectivity-test-flags: --test '!no-missed-tail-calls,!check-log-errors'
+          extra-connectivity-test-flags: --test '!check-log-errors'
           operation-cmd: |
             cd /host/
 
