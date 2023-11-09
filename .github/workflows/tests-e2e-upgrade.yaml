@@ -243,11 +243,12 @@ jobs:
           ref: ${{ steps.vars.outputs.sha }}
           persist-credentials: false
 
-      - name: Download Helm charts for ${{ env.cilium_stable_version }}
-        shell: bash
-        run: |
-          wget https://github.com/cilium/cilium/archive/refs/heads/v${{ env.cilium_stable_version }}.tar.gz
-          tar -xf v${{ env.cilium_stable_version }}.tar.gz
+      - name: Checkout ${{ steps.vars.outputs.downgrade_version }} branch to get the Helm chart
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          path: cilium-${{ steps.vars.outputs.downgrade_version }}
+          ref: ${{ steps.vars.outputs.downgrade_version }}
+          persist-credentials: false
 
       - name: Install Cilium CLI-cli
         uses: cilium/cilium-cli@8144df39be1411403dbe06a14fdddf24e9eb0c1e # v0.15.5
