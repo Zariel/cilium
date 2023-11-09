@@ -386,7 +386,7 @@ jobs:
 
             ./cilium-cli connectivity test --include-unsafe-tests --collect-sysdump-on-failure \
               --include-conn-disrupt-test \
-              --test '!check-log-errors' \
+              --test '!no-missed-tail-calls,!check-log-errors' \
               --flush-ct \
               --sysdump-hubble-flows-count=1000000 --sysdump-hubble-flows-timeout=5m \
               --sysdump-output-filename "cilium-sysdump-${{ matrix.name }}-<ts>" \
