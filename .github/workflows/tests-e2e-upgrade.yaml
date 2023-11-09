@@ -286,7 +286,7 @@ jobs:
             if [ "${{ matrix.ipv6 }}" == "false" ]; then
               IP_FAM="ipv4"
             fi
-            IMAGE=quay.io/cilium/kindest-node:${k8s_version} ./contrib/scripts/kind.sh "" 3 "" "" "${{ matrix.kube-proxy }}" \$IP_FAM
+            IMAGE=quay.io/cilium/kindest-node:${k8s_version} ./contrib/scripts/kind.sh --xdp --secondary-network "" 3 "" "" "${{ matrix.kube-proxy }}" \$IP_FAM
 
             kubectl patch node kind-worker3 --type=json -p='[{"op":"add","path":"/metadata/labels/cilium.io~1no-schedule","value":"true"}]'
 
